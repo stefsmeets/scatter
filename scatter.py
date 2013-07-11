@@ -538,6 +538,23 @@ peng1998 = dict([
 ['U6+',	 	[92,	-6,	0.687E+0,	 0.114E+1,	 0.183E+1,	 0.253E+1,	 0.957E+0,	0.154E+0,	 0.861E+0,	 0.258E+1,	 0.770E+1,	 0.159E+2]]
 ])
 
+
+XRS = { # a1 b1 a2 b2 a3 b3 a4 b4 c
+'Al' : "FORMGN Al    6.420203.038701.900200.742601.5936031.54721.9646085.08861.11510",
+'C'  : "FORMGN C     2.3100020.84391.0200010.20751.588600.568700.8650051.65120.21560",
+'Ca' : "FORMGN Ca    8.6266010.44217.387300.659901.5899085.74841.02110178.4371.37510",
+'F'  : "FORMGN F     3.5392010.28252.641204.294401.517000.261501.0243026.14760.27760",
+'Ge' : "FORMGN Ge    16.08162.850906.374700.251603.7068011.44683.6830054.76252.13130",
+'H'  : "FORMGN H     0.4899220.65930.262007.740390.1967749.55190.049882.201590.00131",
+'N'  : "FORMGN N     12.21260.005703.132209.893302.0125028.99751.166300.58260-11.529",
+'Na' : "FORMGN Na    4.762603.285003.173608.842201.267400.313601.11280129.4240.67600",
+'O'  : "FORMGN O     3.0448513.22772.286805.701101.546300.323900.8670032.90890.25080",
+'P'  : "FORMGN P     6.434501.906704.1791027.15701.780000.526001.4908068.16451.11490",
+'Si' : "FORMGN Si    6.291502.438603.0353032.33371.989100.678501.5410081.69371.14070",
+'Zn' : "FORMGN Zn    14.07433.265507.031800.233305.1652010.31632.4100058.70971.30410",
+'Zr' : "FORMGN Zr    17.87651.2761810.948011.91605.417320.117623.6572187.66272.06929"
+}
+
 elements = ['H',	'He',	'Li',	'Be',	'B',	'C',	'N',	'O',	'F',	'Ne',	'Na',	'Mg',	'Al',	'Si',	'P',	'S',	'Cl',
 		 	'Ar',	'K',	'Ca',	'Sc',	'Ti',	'V',	'Cr',	'Mn',	'Fe',	'Co',	'Ni',	'Cu',	'Zn',	'Ga',	'Ge',	'As',	'Se',	'Br',	
 		 	'Kr',	'Rb',	'Sr',	'Y',	'Zr',	'Nb',	'Mo',	'Tc',	'Ru',	'Rh',	'Pd',	'Ag',	'Cd',	'In',	'Sn',	'Sb',	'Te',	'I',	
@@ -567,7 +584,7 @@ import matplotlib.pyplot as plt
 from sys import argv
 import argparse
 
-__version__ = "12-09-2012"
+__version__ = "10-07-2013"
 
 
 #n = r()*len(it_table_4322.keys()) // 1
@@ -714,6 +731,17 @@ def print_combine_tables(atoms):
 
 
 
+def xrs2table(d):
+	e = {}
+	a5 = 0.0
+	b5 = 0.0
+	for key,line in d.items():
+		label = line[0:11].strip()
+		a1,b1,a2,b2,a3,b3,a4,b4,c = [float(line[13+7*i:13+7+7*i]) for i in xrange(9)]
+		e['xrs'+key] = [a1,a2,a3,a4,a5,b1,b2,b3,b4,b5,c]
+	return e
+
+
 
 def combine_scfacts(atom1,atom2,ratio):
 	ratio = float(ratio)
@@ -767,10 +795,17 @@ def add_us():
 	check_consistency(atoms,s,True,True,0.01)
 
 
-
-
-
-
+def print_table_topas(atoms):
+	print "x-ray {"
+	for atom in atoms:
+		if atom not in tables:
+			continue
+		data = tables[atom]
+		print '%8s' % atom,
+		print '%f  %f  %f  %f  %f' % (data[2],	data[3],	data[4],	data[5],	data[6]),
+		print '%f' % 0.0,
+		print '%f  %f  %f  %f  %f' % (data[7],	data[8],	data[9],	data[10],	data[11])
+	print '}'
 
 def main(options,args):
 	global tables
@@ -791,13 +826,15 @@ def main(options,args):
 	if 'all' in args:
 		args.remove('all')
 		atoms += elements + ions + other
+	if 'xrsall' in args:
+		args.remove('xrsall')
+		atoms += XRS.keys()
 	atoms += args
 
 
 	if options.table in ('xray','wk1995'):
 		tpe = "xray"
 		tables = wk1995
-
 	elif options.table == 'electron':
 		tpe = "electron"
 		tables = dict(peng1998.items() + it_table_4322.items())
@@ -813,16 +850,32 @@ def main(options,args):
 	else:
 		raise NameError, 'Unknown scattering factor table: {}'.format(options.table)
 
+	if options.xrs:
+		options.print_table = False
+		tables = dict(tables.items() + xrs2table(XRS).items())
+		print 'Add these lines to drcard.dat and run datrdn\n'
+		for atom in atoms:
+			print XRS.get(atom, 'Atom {} not in the table!'.format(atom))
+
+		atoms += ['xrs'+atom for atom in atoms if atom in XRS.keys()]
+
+
+
 	if options.merged:
 		print_combine_tables(atoms)
+	elif options.topas:
+		print_table_topas(atoms)
 	else:
-		print_table(atoms,tpe)
+		if options.print_table:
+			print_table(atoms,tpe)
 		
 		if options.plot:
 			plot_sf_atoms(atoms,s,tpe)
 	
 		if options.print_raw_data:
 			print_xy_atoms(atoms,s,tpe)
+
+
 
 
 
@@ -849,12 +902,12 @@ if __name__ == '__main__':
 						help="List of atoms")
 		
 	parser.add_argument("-t", "--table",
-						action="store", type=str, dest="table", nargs=1,
+						action="store", type=str, dest="table",
 						help="Scattering factor table to use (xray,electron,wk1995,it4322,it4323,peng1998). Defaults: xray")
 	
 
 	parser.add_argument("-r", "--range", metavar="val",
-						action="store", type=int, nargs=3, dest="s_range", 
+						action="store", type=float, nargs=3, dest="s_range", 
 						help="sin(th)/lambda range. Requires 3 values: start finish step")
 
 	parser.add_argument("-w", "--raw", 
@@ -870,6 +923,15 @@ if __name__ == '__main__':
 						action="store_true", dest="merged",
 						help="Combines all scattering factor tables. Used for updating the tables in focus/atoms.h")
 
+	parser.add_argument("-c", "--xrs", 
+						action="store_true", dest="xrs",
+						help="Plots scattering factors for XRS, including FORMGN lines for drcard.dat")
+
+	parser.add_argument("--topas", 
+						action="store_true", dest="topas",
+						help="Print table compatible with topas (save as atmscat.cpp in topas4 root dir)")
+
+
 
 	
 	parser.set_defaults(table="xray",
@@ -877,7 +939,10 @@ if __name__ == '__main__':
 						print_raw_data=False,
 						merged=False,
 						combine=False,
-						s_range=[0,2,0.01])
+						s_range=[0,2,0.01],
+						xrs = False,
+						print_table = True,
+						topas = False)
 	
 	options = parser.parse_args()
 	args = options.args
