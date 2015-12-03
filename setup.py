@@ -7,7 +7,7 @@ from os import path
 
 setup(
     name="scatter",
-    version="1.0.0",
+    version="1.0.1",
     description="A python tool to plot and output atomic scattering factors",
 
     author="Stef Smeets",
@@ -17,6 +17,7 @@ setup(
 
     classifiers=[
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
     ],
 
     packages=["scatter"],
