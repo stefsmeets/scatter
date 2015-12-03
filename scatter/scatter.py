@@ -17,13 +17,19 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+try:
+    range = xrange
+except NameError:
+    pass
+
 from random import random as r
 import numpy as np
 import matplotlib.pyplot as plt
 from sys import argv
 import argparse
 
-__version__ = "2015-09-15"
+__version__ = "2015-12-03"
 
 from it_table_4322 import it_table_4322
 from it_table_4323 import it_table_4323
@@ -113,11 +119,11 @@ def calc_sf(atom, data, s, tpe="xray"):
 def calc_sf_electron(atom,  data,   s):
     """scattering factor function for electron/it432x table"""
     total = None
-    for i in xrange(5):
+    for i in range(5):
         a, b, dZ = data[2+i], data[7+i], data[1]
         y = gaussian_fit(a, b, s)
 
-        if total == None:
+        if total is None:
             total = y
         else:
             total += y
@@ -127,7 +133,7 @@ def calc_sf_electron(atom,  data,   s):
 def calc_sf_xray(atom,  data,   s):
     """Scattering factor function for xray/wk1995 table"""
     total = None
-    for i in xrange(5):
+    for i in range(5):
         a, b, c = data[0+i], data[5+i], data[10]   # wk95
         y = gaussian_fit(a, b, s)
 
@@ -148,20 +154,20 @@ def print_xy_atoms(atoms, s, tpe="xray"):
 
 def print_xy(atoms, s,  ys):
 
-    print "\n      ",
+    print("\n      ", end=' ')
     for atom in atoms:
-        print "{:>10s}".format(atom),
+        print("{:>10s}".format(atom), end=' ')
     for i, val in enumerate(s):
-        print "\n{:6.2f}".format(val),
+        print("\n{:6.2f}".format(val), end=' ')
         for j in range(len(atoms)):
-            print "{:10.5f}".format(ys[j][i]),
+            print("{:10.5f}".format(ys[j][i]), end=' ')
 
 
 def check_consistency(atoms, s, plot=False,   show=False, threshold=0):
     for atom in atoms:
         total1 = None
         data1 = it_table_4322[atom]
-        for i in xrange(5):
+        for i in range(5):
             a, b, dZ = data1[2+i], data1[7+i], data1[1]
             y = gaussian_fit(a, b, s)
             if total1 == None:
@@ -171,7 +177,7 @@ def check_consistency(atoms, s, plot=False,   show=False, threshold=0):
 
         data2 = it_table_4323[atom]
         total2 = None
-        for i in xrange(5):
+        for i in range(5):
             a, b, dZ = data2[2+i], data2[7+i], data2[1]
             y = gaussian_fit(a, b, s)
             if total2 == None:
@@ -180,7 +186,7 @@ def check_consistency(atoms, s, plot=False,   show=False, threshold=0):
                 total2 += y
 
         r = sum((total1-total2)**2)
-        print "%4s %7.3f" % (atom, r)
+        print("%4s %7.3f" % (atom, r))
 
         if r > threshold:
             if show:
@@ -196,27 +202,27 @@ def print_combine_tables(atoms):
     for atom in atoms:
         if atom in wk1995:
             data = wk1995[atom]
-            print "{ \"%s\",\n" % atom,
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[0],    data[1],    data[2],    data[3],    data[4]),
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[5],    data[6],    data[7],    data[8],    data[9]),
-            print "      %f,                     \n" % data[10],
+            print("{ \"%s\",\n" % atom, end=' ')
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[0],    data[1],    data[2],    data[3],    data[4]), end=' ')
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[5],    data[6],    data[7],    data[8],    data[9]), end=' ')
+            print("      %f,                     \n" % data[10], end=' ')
         else:
-            print 'atom not found ?', atom
+            print('atom not found ?', atom)
             exit()
         if atom in it_table_4322:
             data = it_table_4322[atom]
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[2],    data[3],    data[4],    data[5],    data[6]),
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[7],    data[8],    data[9],    data[10],   data[11]),
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[2],    data[3],    data[4],    data[5],    data[6]), end=' ')
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[7],    data[8],    data[9],    data[10],   data[11]), end=' ')
         else:
-            print "    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n",
-            print "    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n",
+            print("    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n", end=' ')
+            print("    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n", end=' ')
         if atom in it_table_4323:
             data = it_table_4323[atom]
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[2],    data[3],    data[4],    data[5],    data[6]),
-            print "    { %f, %f, %f, %f, %f } }, \n" % (data[7],    data[8],    data[9],    data[10],   data[11]),
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[2],    data[3],    data[4],    data[5],    data[6]), end=' ')
+            print("    { %f, %f, %f, %f, %f } }, \n" % (data[7],    data[8],    data[9],    data[10],   data[11]), end=' ')
         else:
-            print "    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n",
-            print "    { 0.0, 0.0, 0.0, 0.0, 0.0 } }, \n",
+            print("    { 0.0, 0.0, 0.0, 0.0, 0.0 }, \n", end=' ')
+            print("    { 0.0, 0.0, 0.0, 0.0, 0.0 } }, \n", end=' ')
 
 
 def xrs2table(d):
@@ -226,7 +232,7 @@ def xrs2table(d):
     for key, line in d.items():
         label = line[0:11].strip()
         a1, b1, a2, b2, a3, b3, a4, b4, c = [
-            float(line[13+7*i:13+7+7*i]) for i in xrange(9)]
+            float(line[13+7*i:13+7+7*i]) for i in range(9)]
         e['xrs'+key] = [a1, a2, a3, a4, a5, b1, b2, b3, b4, b5, c]
     return e
 
@@ -239,7 +245,7 @@ def combine_scfacts(atom1, atom2, ratio):
 
     sfact = []
 
-    for n in xrange(12):
+    for n in range(12):
         item = data1[n]*ratio + data2[n]*(1-ratio)
         sfact.append(item)
 
@@ -249,28 +255,28 @@ def combine_scfacts(atom1, atom2, ratio):
 
 def print_table(atoms, tpe, custom_data=None):
     if tpe == "xray":
-        print """name 
+        print("""name 
     a1 a1 a3 a4 a5
     b1 b2 b3 b4 b5
-    c"""
+    c""")
     if tpe == "electron":
-        print """name 
+        print("""name 
     a1 a1 a3 a4 a5
-    b1 b2 b3 b4 b5"""
+    b1 b2 b3 b4 b5""")
     for atom in atoms:
         if custom_data:
             data = custom_data
         else:
             data = tables[atom]
         if tpe == "xray":
-            print "{ \"%s\",\n" % atom,
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[0],    data[1],    data[2],    data[3],    data[4]),
-            print "    { %f, %f, %f, %f, %f },   \n" % (data[5],    data[6],    data[7],    data[8],    data[9]),
-            print "      %f,                     \n" % data[10],
+            print("{ \"%s\",\n" % atom, end=' ')
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[0],    data[1],    data[2],    data[3],    data[4]), end=' ')
+            print("    { %f, %f, %f, %f, %f },   \n" % (data[5],    data[6],    data[7],    data[8],    data[9]), end=' ')
+            print("      %f,                     \n" % data[10], end=' ')
         if tpe == "electron":
-            print "{ \"%s\",\n" % atom,
-            print "    { %f,    %f, %f, %f, %f },   \n" % (data[2], data[3],    data[4],    data[5],    data[6]),
-            print "    { %f,    %f, %f, %f, %f } },\n" % (data[7],  data[8],    data[9],    data[10],   data[11]),
+            print("{ \"%s\",\n" % atom, end=' ')
+            print("    { %f,    %f, %f, %f, %f },   \n" % (data[2], data[3],    data[4],    data[5],    data[6]), end=' ')
+            print("    { %f,    %f, %f, %f, %f } },\n" % (data[7],  data[8],    data[9],    data[10],   data[11]), end=' ')
 
 
 def add_us():
@@ -279,16 +285,22 @@ def add_us():
 
 
 def print_table_topas(atoms):
-    print "x-ray {"
+    print("x-ray {")
     for atom in atoms:
         if atom not in tables:
             continue
         data = tables[atom]
-        print '%8s' % atom,
-        print '%f  %f  %f  %f  %f' % (data[2],  data[3],    data[4],    data[5],    data[6]),
-        print '%f' % 0.0,
-        print '%f  %f  %f  %f  %f' % (data[7],  data[8],    data[9],    data[10],   data[11])
-    print '}'
+        if len(data) == 12:
+            print('%8s' % atom, end=' ')
+            print('%f  %f  %f  %f  %f' % (data[2],  data[3],    data[4],    data[5],    data[6]), end=' ')
+            print('%f' % 0.0, end=' ')
+            print('%f  %f  %f  %f  %f' % (data[7],  data[8],    data[9],    data[10],   data[11]))
+        else:
+            print('%8s' % atom, end=' ')
+            print('%f  %f  %f  %f  %f' % (data[0],  data[1],    data[2],    data[3],    data[4]), end=' ')
+            print('%f' % 0.0, end=' ')
+            print('%f  %f  %f  %f  %f' % (data[5],  data[6],    data[7],    data[8],    data[9]))
+    print('}')
 
 
 def main():
@@ -301,8 +313,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=description,
         epilog=epilog,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        version=__version__)
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("args",
                         type=str, metavar="atoms", nargs='*',
@@ -387,14 +398,14 @@ def main():
         tpe = "electron"
         tables = peng1998
     else:
-        raise NameError, 'Unknown scattering factor table: {}'.format(options.table)
+        raise NameError('Unknown scattering factor table: {}'.format(options.table))
 
     if options.xrs:
         options.print_table = False
         tables = dict(tables.items() + xrs2table(XRS).items())
-        print 'Add these lines to drcard.dat and run datrdn\n'
+        print('Add these lines to drcard.dat and run datrdn\n')
         for atom in atoms:
-            print XRS.get(atom, 'Atom {} not in the table!'.format(atom))
+            print(XRS.get(atom, 'Atom {} not in the table!'.format(atom)))
 
         atoms += ['xrs'+atom for atom in atoms if atom in XRS.keys()]
 
