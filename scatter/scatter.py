@@ -93,7 +93,7 @@ def calc_s(ld, r):
     return 4 * np.pi * (1/ld) * r
 
 
-def gaussian_fit(a, b, s):
+def gaussian(a, b, s):
     """General Gaussian"""
     return a * np.exp(-b * s**2)
 
@@ -124,7 +124,7 @@ def calc_sf_electron(atom,  data,   s):
     total = None
     for i in range(5):
         a, b, dZ = data[2+i], data[7+i], data[1]
-        y = gaussian_fit(a, b, s)
+        y = gaussian(a, b, s)
 
         if total is None:
             total = y
@@ -138,7 +138,7 @@ def calc_sf_xray(atom,  data,   s):
     total = None
     for i in range(5):
         a, b, c = data[0+i], data[5+i], data[10]   # wk95
-        y = gaussian_fit(a, b, s)
+        y = gaussian(a, b, s)
 
         if total is None:
             total = y + c
@@ -172,7 +172,7 @@ def check_consistency(atoms, s, plot=False,   show=False, threshold=0):
         data1 = it_table_4322[atom]
         for i in range(5):
             a, b, dZ = data1[2+i], data1[7+i], data1[1]
-            y = gaussian_fit(a, b, s)
+            y = gaussian(a, b, s)
             if total1 == None:
                 total1 = y
             else:
@@ -182,7 +182,7 @@ def check_consistency(atoms, s, plot=False,   show=False, threshold=0):
         total2 = None
         for i in range(5):
             a, b, dZ = data2[2+i], data2[7+i], data2[1]
-            y = gaussian_fit(a, b, s)
+            y = gaussian(a, b, s)
             if total2 == None:
                 total2 = y
             else:
@@ -287,21 +287,39 @@ def add_us():
     check_consistency(atoms, s, True, True, 0.01)
 
 
-def gaussian(x, height, width, offset):
-    return height*np.exp(-(x)**2*width) + offset
+def four_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4):
+    return (gaussian(h1, w1, x) +
+            gaussian(h2, w2, x) +
+            gaussian(h3, w3, x) + 
+            gaussian(h4, w4, x))
 
-def four_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4, offset=0):
-    return (gaussian(x, h1, w1, offset=0) +
-            gaussian(x, h2, w2, offset=0) +
-            gaussian(x, h3, w3, offset=0) + 
-            gaussian(x, h4, w4, offset=0) + offset)
 
-def five_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4, h5, w5, offset=0):
-    return (gaussian(x, h1, w1, offset=0) +
-        gaussian(x, h2,  w2, offset=0) +
-        gaussian(x, h3,  w3, offset=0) + 
-        gaussian(x, h4,  w4, offset=0) + 
-        gaussian(x, h5,  w5, offset=0) + offset)
+def five_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4, h5, w5):
+    return (gaussian(h1,  w1, x) +
+            gaussian(h2,  w2, x) +
+            gaussian(h3,  w3, x) + 
+            gaussian(h4,  w4, x) + 
+            gaussian(h5,  w5, x))
+
+
+def peng_formula(f0, dZ, s):
+    """
+    from http://scripts.iucr.org/cgi-bin/paper?S0108767398001901
+    Based on the Mott-Bethe formulation
+    """
+    raise NotImplementedError("Not working as expected")
+
+    pi = np.pi
+    me = 9.1093818e-31 # kg
+    h = 6.62606809633e-34 # J s
+    c = 1.60217646e-19 # C
+
+    constant = (me * c**2) / (2 * h**2)
+
+    f1 = f0 + constant * (dZ/s**2)
+
+    return f1
+
 
 def print_table_shelx(atoms, s, kind):
     # from IPython import embed
@@ -317,8 +335,8 @@ def print_table_shelx(atoms, s, kind):
         data = tables[atom]
         if kind == "electron":
             values = data[2], data[7], data[3], data[8], data[4], data[9], data[5], data[10], data[6], data[11]
-            
-            args = s, five_gaussians(s, *values, offset=0)
+
+            args = s, five_gaussians(s, *values)
             
             def errfunc(p, x, y):
                 # print(p.shape, x.shape, y.shape)
@@ -326,22 +344,22 @@ def print_table_shelx(atoms, s, kind):
                 # print(ret.shape, np.sum(ret))
                 return ret
             
-            x_init = [0.3352, 0.4001, 0.8630, 3.0532, 2.5725, 17.1148, 2.0490, 59.0519]
+            x_init = [0.3352, 0.4001, 0.8630, 3.0532, 2.5725, 17.1148, 2.0490, 59.0519]  # Si
 
             result = optimize.least_squares(errfunc, x_init[:], args=args)
             x_values = result.x
 
             if result.success:
-                print("{name} minimized nfev: {nfev}, njev: {njev}, optimality: {optimality}, cost: {cost}".format(name=atom, **result))
+                print("{name} minimized -> nfev: {nfev}, njev: {njev}, optimality: {optimality:.3g}, cost: {cost:.3g}".format(name=atom, **result))
             else:
                 raise ValueError(result.message)
 
             element = ''.join([i for i in atom if i.isalpha()])
-            covrad = atomic_radii[element][1]
-            wght = atomic_radii[element][2]
+            covrad = atomic_radii[element][2]
+            wght = atomic_radii[element][1]
 
             h1, w1, h2, w2, h3, w3, h4, w4 = x_values
-            sfac = "SFAC {atom:4s} {h1:7.4f} {w1:7.4f} {h2:7.4f} {w2:7.4f} {h3:7.4f} {w3:7.4f} {h4:7.4f} {w4:7.4f} =\n          {no_data:7.4f} {no_data:7.4f} {no_data:7.4f} {covrad:7.4f} {wght:7.4f}".format(
+            sfac = "SFAC {atom:4s} {h1:7.4f} {w1:7.4f} {h2:7.4f} {w2:7.4f} {h3:7.4f} {w3:7.4f} {h4:7.4f} {w4:7.4f} =\n          {no_data:7.4f} {no_data:7.4f} {no_data:7.4f} {no_data:7.4f} {covrad:7.4f} {wght:7.4f}".format(
                 atom=atom, h1=h1, w1=w1, h2=h2, w2=w2, h3=h3, w3=w3, h4=h4, w4=w4, no_data=0.0, covrad=covrad, wght=wght)
             sfacs.append(sfac)
 
@@ -351,6 +369,7 @@ def print_table_shelx(atoms, s, kind):
         else:
             raise NotImplementedError
 
+    plt.title("Fitting results")
     plt.ylabel("f")
     plt.xlabel(r"$\sin(\theta)/\lambda (1/\mathrm{\AA})$")
     plt.legend()
