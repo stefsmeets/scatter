@@ -35,6 +35,9 @@ from it_table_4322 import it_table_4322
 from it_table_4323 import it_table_4323
 from peng1998 import peng1998
 from wk1995 import wk1995
+from dt1969 import dt1969
+from atomic_radii import atomic_radii
+
 
 XRS = {  # a1 b1 a2 b2 a3 b3 a4 b4 c
     'Al': "FORMGN Al    6.420203.038701.900200.742601.5936031.54721.9646085.08861.11510",
@@ -97,20 +100,22 @@ def gaussian_fit(a, b, s):
     return a * np.exp(-b * s**2)
 
 
-def plot_sf_atoms(atoms, s, tpe="xray"):
+def plot_sf_atoms(atoms, s, kind="xray"):
     for atom in atoms:
         data = tables[atom]
-        y = calc_sf(atom, data, s, tpe)
+        y = calc_sf(atom, data, s, kind)
         plt.plot(s, y, label=atom)
 
+    plt.ylabel("f")
+    plt.xlabel(r"$\sin(\theta)/\lambda (1/\mathrm{\AA})$")
     plt.legend()
     plt.show()
 
 
-def calc_sf(atom, data, s, tpe="xray"):
-    if tpe == 'xray':
+def calc_sf(atom, data, s, kind="xray"):
+    if kind == 'xray':
         return calc_sf_xray(atom, data, s)
-    elif tpe == "electron":
+    elif kind == "electron":
         return calc_sf_electron(atom, data, s)
     else:
         raise NameError
@@ -144,11 +149,11 @@ def calc_sf_xray(atom,  data,   s):
     return total
 
 
-def print_xy_atoms(atoms, s, tpe="xray"):
+def print_xy_atoms(atoms, s, kind="xray"):
     ys = []
     for atom in atoms:
         data = tables[atom]
-        ys.append(calc_sf(atom, data, s, tpe))
+        ys.append(calc_sf(atom, data, s, kind))
     print_xy(atoms, s, ys)
 
 
@@ -253,13 +258,13 @@ def combine_scfacts(atom1, atom2, ratio):
     return atoms, sfact
 
 
-def print_table(atoms, tpe, custom_data=None):
-    if tpe == "xray":
+def print_table(atoms, kind, custom_data=None):
+    if kind == "xray":
         print("""name 
     a1 a1 a3 a4 a5
     b1 b2 b3 b4 b5
     c""")
-    if tpe == "electron":
+    if kind == "electron":
         print("""name 
     a1 a1 a3 a4 a5
     b1 b2 b3 b4 b5""")
@@ -268,12 +273,12 @@ def print_table(atoms, tpe, custom_data=None):
             data = custom_data
         else:
             data = tables[atom]
-        if tpe == "xray":
+        if kind == "xray":
             print("{ \"%s\",\n" % atom, end=' ')
             print("    { %f, %f, %f, %f, %f },   \n" % (data[0],    data[1],    data[2],    data[3],    data[4]), end=' ')
             print("    { %f, %f, %f, %f, %f },   \n" % (data[5],    data[6],    data[7],    data[8],    data[9]), end=' ')
             print("      %f,                     \n" % data[10], end=' ')
-        if tpe == "electron":
+        if kind == "electron":
             print("{ \"%s\",\n" % atom, end=' ')
             print("    { %f,    %f, %f, %f, %f },   \n" % (data[2], data[3],    data[4],    data[5],    data[6]), end=' ')
             print("    { %f,    %f, %f, %f, %f } },\n" % (data[7],  data[8],    data[9],    data[10],   data[11]), end=' ')
@@ -282,6 +287,80 @@ def print_table(atoms, tpe, custom_data=None):
 def add_us():
     atoms, tables['custom'] = combine_scfacts(*atoms)
     check_consistency(atoms, s, True, True, 0.01)
+
+
+def gaussian(x, height, width, offset):
+    return height*np.exp(-(x)**2*width) + offset
+
+def four_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4, offset=0):
+    return (gaussian(x, h1, w1, offset=0) +
+            gaussian(x, h2, w2, offset=0) +
+            gaussian(x, h3, w3, offset=0) + 
+            gaussian(x, h4, w4, offset=0) + offset)
+
+def five_gaussians(x, h1, w1, h2, w2, h3, w3, h4, w4, h5, w5, offset=0):
+    return (gaussian(x, h1, w1, offset=0) +
+        gaussian(x, h2,  w2, offset=0) +
+        gaussian(x, h3,  w3, offset=0) + 
+        gaussian(x, h4,  w4, offset=0) + 
+        gaussian(x, h5,  w5, offset=0) + offset)
+
+def print_table_shelx(atoms, s, kind):
+    # from IPython import embed
+    # embed()
+
+    sfacs = []
+
+    from scipy import optimize
+
+    for atom in atoms:
+        if atom not in tables:
+            continue
+        data = tables[atom]
+        if kind == "electron":
+            values = data[2], data[7], data[3], data[8], data[4], data[9], data[5], data[10], data[6], data[11]
+            
+            args = s, five_gaussians(s, *values, offset=0)
+            
+            def errfunc(p, x, y):
+                # print(p.shape, x.shape, y.shape)
+                ret = (four_gaussians(x, *p) - y)**2
+                # print(ret.shape, np.sum(ret))
+                return ret
+            
+            x_init = [0.3352, 0.4001, 0.8630, 3.0532, 2.5725, 17.1148, 2.0490, 59.0519]
+
+            result = optimize.least_squares(errfunc, x_init[:], args=args)
+            x_values = result.x
+
+            if result.success:
+                print("{name} minimized nfev: {nfev}, njev: {njev}, optimality: {optimality}, cost: {cost}".format(name=atom, **result))
+            else:
+                raise ValueError(result.message)
+
+            element = ''.join([i for i in atom if i.isalpha()])
+            covrad = atomic_radii[element][1]
+            wght = atomic_radii[element][2]
+
+            h1, w1, h2, w2, h3, w3, h4, w4 = x_values
+            sfac = "SFAC {atom:4s} {h1:7.4f} {w1:7.4f} {h2:7.4f} {w2:7.4f} {h3:7.4f} {w3:7.4f} {h4:7.4f} {w4:7.4f} =\n          {no_data:7.4f} {no_data:7.4f} {no_data:7.4f} {covrad:7.4f} {wght:7.4f}".format(
+                atom=atom, h1=h1, w1=w1, h2=h2, w2=w2, h3=h3, w3=w3, h4=h4, w4=w4, no_data=0.0, covrad=covrad, wght=wght)
+            sfacs.append(sfac)
+
+            plt.plot(s, four_gaussians(s, *x_values), label="{} fitted (4 params)".format(atom))
+            plt.plot(s, five_gaussians(s, *values), label="{} tabulated (5 params)".format(atom))
+
+        else:
+            raise NotImplementedError
+
+    plt.ylabel("f")
+    plt.xlabel(r"$\sin(\theta)/\lambda (1/\mathrm{\AA})$")
+    plt.legend()
+    plt.show()
+
+    print()
+    for sfac in sfacs:
+        print(sfac)
 
 
 def print_table_topas(atoms):
@@ -321,7 +400,7 @@ def main():
 
     parser.add_argument("-t", "--table",
                         action="store", type=str, dest="table",
-                        help="Scattering factor table to use (xray,electron,wk1995,it4322,it4323,peng1998). Defaults: xray")
+                        help="Scattering factor table to use (xray,electron,wk1995,it4322,it4323,peng1998,dt1969). Defaults: xray")
 
     parser.add_argument("-r", "--range", metavar="val",
                         action="store", type=float, nargs=3, dest="s_range",
@@ -346,6 +425,10 @@ def main():
     parser.add_argument("--topas",
                         action="store_true", dest="topas",
                         help="Print table compatible with topas (save as atmscat.cpp in topas4 root dir)")
+    
+    parser.add_argument("--shelx",
+                        action="store_true", dest="shelx",
+                        help="Print SFAC cards for SHELX")
 
     parser.set_defaults(table="xray",
                         plot=True,
@@ -383,19 +466,19 @@ def main():
     atoms += args
 
     if options.table in ('xray', 'wk1995'):
-        tpe = "xray"
+        kind = "xray"
         tables = wk1995
     elif options.table == 'electron':
-        tpe = "electron"
+        kind = "electron"
         tables = dict(peng1998.items() + it_table_4322.items())
     elif options.table == 'it_table_4322':
-        tpe = "electron"
+        kind = "electron"
         tables = it_table_4322
     elif options.table == 'it_table_4323':
-        tpe = "electron"
+        kind = "electron"
         tables = it_table_4323
     elif options.table == 'peng1998':
-        tpe = "electron"
+        kind = "electron"
         tables = peng1998
     else:
         raise NameError('Unknown scattering factor table: {}'.format(options.table))
@@ -413,15 +496,17 @@ def main():
         print_combine_tables(atoms)
     elif options.topas:
         print_table_topas(atoms)
+    elif options.shelx:
+        print_table_shelx(atoms, s, kind)
     else:
         if options.print_table:
-            print_table(atoms, tpe)
+            print_table(atoms, kind)
 
         if options.plot:
-            plot_sf_atoms(atoms, s, tpe)
+            plot_sf_atoms(atoms, s, kind)
 
         if options.print_raw_data:
-            print_xy_atoms(atoms, s, tpe)
+            print_xy_atoms(atoms, s, kind)
 
 
 if __name__ == '__main__':
