@@ -29,12 +29,12 @@ import matplotlib.pyplot as plt
 from sys import argv
 import argparse
 
-from it_table_4322 import it_table_4322
-from it_table_4323 import it_table_4323
-from peng1998 import peng1998
-from wk1995 import wk1995
-from dt1969 import dt1969
-from atomic_radii import atomic_radii
+from .it_table_4322 import it_table_4322
+from .it_table_4323 import it_table_4323
+from .peng1998 import peng1998
+from .wk1995 import wk1995
+from .dt1969 import dt1969
+from .atomic_radii import atomic_radii
 
 
 XRS = {  # a1 b1 a2 b2 a3 b3 a4 b4 c
@@ -484,7 +484,7 @@ def main():
         tables = wk1995
     elif options.table == 'electron':
         kind = "electron"
-        tables = dict(peng1998.items() + it_table_4322.items())
+        tables = dict(list(peng1998.items()) + list(it_table_4322.items()))
     elif options.table == 'it_table_4322':
         kind = "electron"
         tables = it_table_4322
@@ -499,7 +499,7 @@ def main():
 
     if options.xrs:
         options.print_table = False
-        tables = dict(tables.items() + xrs2table(XRS).items())
+        tables = dict(list(tables.items()) + list(xrs2table(XRS).items()))
         print('Add these lines to drcard.dat and run datrdn\n')
         for atom in atoms:
             print(XRS.get(atom, 'Atom {} not in the table!'.format(atom)))

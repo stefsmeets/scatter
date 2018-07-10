@@ -7,11 +7,11 @@ from os import path
 
 setup(
     name="scatter",
-    version="1.0.1",
+    version="1.0.2",
     description="A python tool to plot and output atomic scattering factors",
 
     author="Stef Smeets",
-    author_email="stef.smeets@mat.ethz.ch",
+    author_email="stef.smeets@mmk.su.se",
     license="GPL",
     url="https://github.com/stefsmeets/scatter",
 
