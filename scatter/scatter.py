@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #    Scatter - A python tool to plot and output atomic scattering factors
-#    Copyright (C) 2015 Stef Smeets
+#    Copyright (C) 2018 Stef Smeets
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sys import argv
 import argparse
-
-__version__ = "2015-12-03"
 
 from it_table_4322 import it_table_4322
 from it_table_4323 import it_table_4323
@@ -387,11 +385,8 @@ def main():
     - Passing 'all' as an argument adds all atoms.
 """
 
-    epilog = 'Updated: {}'.format(__version__)
-
     parser = argparse.ArgumentParser(
         description=description,
-        epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("args",
