@@ -35,6 +35,7 @@ from .peng1998 import peng1998
 from .wk1995 import wk1995
 from .dt1969 import dt1969
 from .atomic_radii import atomic_radii
+from .peng1999 import peng1999
 
 
 XRS = {  # a1 b1 a2 b2 a3 b3 a4 b4 c
@@ -494,6 +495,9 @@ def main():
     elif options.table == 'peng1998':
         kind = "electron"
         tables = peng1998
+    elif options.table == 'peng1999':
+        kind = "electron"
+        tables = peng1999
     else:
         raise NameError('Unknown scattering factor table: {}'.format(options.table))
 
