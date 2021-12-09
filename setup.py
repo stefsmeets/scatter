@@ -11,13 +11,13 @@ setup(
     description="A python tool to plot and output atomic scattering factors",
 
     author="Stef Smeets",
-    author_email="stef.smeets@mmk.su.se",
-    license="GPL",
+    author_email="s.smeets@esciencecenter.nl",
     url="https://github.com/stefsmeets/scatter",
 
     classifiers=[
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
+        'License :: OSI Approved :: MIT License',
     ],
 
     packages=["scatter"],
