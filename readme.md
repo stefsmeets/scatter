@@ -4,28 +4,32 @@ Scatter is a simple tool for plotting atomic scattering factors. To run:
 
     scatter Si O
 
-will plot the scattering factors for Si and O. The --table command can be used to switch between electron/xray scattering factor tables.
+will plot the scattering factors for Si and O. The `--table` command can be used to switch between electron/xray scattering factor tables.
 
     scatter --help
 
 will show the help file.
 
+[Example plot](example.png)
+
 ## Requirements
 
-- Python2.7
-- numpy
-- matplotlib
+- Python 3.9+
+- Numpy
+- Matplotlib
 
 ## Installation
 
-Download and extract:
+Directly from github:
+
+    pip install git+https://github.com/stefsmeets/scatter
+
+Or download and extract:
 
 https://github.com/stefsmeets/scatter/archive/master.zip
 
-Install:
+And install using:
 
-    python setup.py install
+    pip install .
 
-Uninstall:
 
-    pip uninstall scatter
