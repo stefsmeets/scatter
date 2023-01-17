@@ -10,7 +10,7 @@ will plot the scattering factors for Si and O. The `--table` command can be used
 
 will show the help file.
 
-[Example plot](example.png)
+![Example plot](./example.png)
 
 ## Requirements
 
